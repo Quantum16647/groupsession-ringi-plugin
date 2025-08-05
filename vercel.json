@@ -7,6 +7,10 @@
   ],
   "routes": [
     {
+      "src": "/api/proxy",
+      "dest": "/api/proxy.js"
+    },
+    {
       "src": "/(.*)",
       "dest": "/index.html"
     }
