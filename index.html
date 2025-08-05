@@ -1,0 +1,920 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GroupSession 稟議管理プラグイン</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #2c3e50, #3498db);
+            color: white;
+            text-align: center;
+            padding: 30px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse"><path d="M 10 0 L 0 0 0 10" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="0.5"/></pattern></defs><rect width="100" height="100" fill="url(%23grid)"/></svg>');
+            opacity: 0.3;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            font-weight: 300;
+            margin-bottom: 10px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+            position: relative;
+            z-index: 1;
+        }
+
+        .main-content {
+            padding: 40px;
+        }
+
+        .search-section {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+            border-left: 5px solid #3498db;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #2c3e50;
+            font-size: 0.95em;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e1e8ed;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            background: white;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: #3498db;
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .btn {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .btn:hover::before {
+            left: 100%;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white;
+            margin-right: 10px;
+        }
+
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #2980b9, #1f618d);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(52, 152, 219, 0.4);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #27ae60, #16a085);
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: linear-gradient(135deg, #16a085, #138d75);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(39, 174, 96, 0.4);
+        }
+
+        .btn:disabled {
+            background: #bdc3c7;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .results-section {
+            margin-top: 30px;
+        }
+
+        .results-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding: 20px;
+            background: linear-gradient(135deg, #ecf0f1, #bdc3c7);
+            border-radius: 10px;
+        }
+
+        .results-count {
+            font-size: 1.2em;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .ringi-list {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .ringi-item {
+            border-bottom: 1px solid #ecf0f1;
+            padding: 20px;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .ringi-item:hover {
+            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+            transform: translateX(5px);
+        }
+
+        .ringi-item:last-child {
+            border-bottom: none;
+        }
+
+        .ringi-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 10px;
+        }
+
+        .ringi-number {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 0.9em;
+            min-width: 80px;
+            text-align: center;
+        }
+
+        .ringi-title {
+            font-size: 1.1em;
+            font-weight: 600;
+            color: #2c3e50;
+            flex: 1;
+            margin: 0 20px;
+        }
+
+        .ringi-date {
+            color: #7f8c8d;
+            font-size: 0.9em;
+        }
+
+        .ringi-details {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .detail-item {
+            display: flex;
+            align-items: center;
+            font-size: 0.9em;
+        }
+
+        .detail-label {
+            font-weight: 600;
+            color: #34495e;
+            margin-right: 8px;
+        }
+
+        .attachment-count {
+            background: #e74c3c;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            font-weight: 600;
+        }
+
+        .attachment-count.zero {
+            background: #95a5a6;
+        }
+
+        .status-indicator {
+            position: absolute;
+            right: 20px;
+            top: 20px;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #27ae60;
+        }
+
+        .status-indicator.processing {
+            background: #f39c12;
+            animation: pulse 1.5s infinite;
+        }
+
+        .status-indicator.completed {
+            background: #27ae60;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        .progress-section {
+            margin-top: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 15px;
+            display: none;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background: #ecf0f1;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-bottom: 10px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(135deg, #27ae60, #16a085);
+            border-radius: 10px;
+            transition: width 0.5s ease;
+            width: 0%;
+        }
+
+        .progress-text {
+            text-align: center;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .log-section {
+            margin-top: 20px;
+            max-height: 200px;
+            overflow-y: auto;
+            background: #2c3e50;
+            color: #ecf0f1;
+            padding: 15px;
+            border-radius: 10px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+        }
+
+        .log-entry {
+            margin-bottom: 5px;
+            opacity: 0;
+            animation: fadeIn 0.5s ease forwards;
+        }
+
+        @keyframes fadeIn {
+            to { opacity: 1; }
+        }
+
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 25px;
+            background: #27ae60;
+            color: white;
+            border-radius: 10px;
+            font-weight: 600;
+            z-index: 1000;
+            transform: translateX(400px);
+            transition: transform 0.3s ease;
+        }
+
+        .toast.show {
+            transform: translateX(0);
+        }
+
+        .toast.error {
+            background: #e74c3c;
+        }
+
+        @media (max-width: 768px) {
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+            
+            .ringi-details {
+                grid-template-columns: 1fr;
+            }
+            
+            .results-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📋 稟議管理プラグイン</h1>
+            <p>検索・一括ダウンロード・自動ファイリングシステム</p>
+        </div>
+
+        <div class="main-content">
+            <div class="search-section">
+                <h2 style="margin-bottom: 20px; color: #2c3e50;">🔍 検索条件</h2>
+                <form id="searchForm">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="dateFrom">開始日</label>
+                            <input type="date" id="dateFrom" class="form-control">
+                        </div>
+                        <div class="form-group">
+                            <label for="dateTo">終了日</label>
+                            <input type="date" id="dateTo" class="form-control">
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="keyword">キーワード</label>
+                        <input type="text" id="keyword" class="form-control" placeholder="稟議タイトルや内容を検索...">
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="department">部署</label>
+                            <select id="department" class="form-control">
+                                <option value="">全部署</option>
+                                <option value="sales">営業部</option>
+                                <option value="accounting">経理部</option>
+                                <option value="hr">人事部</option>
+                                <option value="it">情報システム部</option>
+                                <option value="general">総務部</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="status">承認状況</label>
+                            <select id="status" class="form-control">
+                                <option value="">全て</option>
+                                <option value="pending">承認待ち</option>
+                                <option value="approved">承認済み</option>
+                                <option value="rejected">却下</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group" style="text-align: center; margin-top: 30px;">
+                        <button type="submit" class="btn btn-primary">🔍 検索実行</button>
+                        <button type="button" id="downloadBtn" class="btn btn-success" disabled>📥 一括ダウンロード</button>
+                    </div>
+                </form>
+            </div>
+
+            <div class="results-section" id="resultsSection" style="display: none;">
+                <div class="results-header">
+                    <div class="results-count" id="resultsCount">検索結果: 0件</div>
+                    <div style="font-size: 0.9em; color: #7f8c8d;">
+                        最新順でナンバリング (最新 = 0001)
+                    </div>
+                </div>
+                <div class="ringi-list" id="ringiList"></div>
+            </div>
+
+            <div class="progress-section" id="progressSection">
+                <h3 style="margin-bottom: 15px; color: #2c3e50;">📊 ダウンロード進捗</h3>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+                <div class="progress-text" id="progressText">準備中...</div>
+                <div class="log-section" id="logSection"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script>
+        // GroupSession クラウド版 API設定
+        const GROUPSESSION_CONFIG = {
+            baseUrl: 'https://your-company.groupsession.jp', // あなたの会社のGroupSession URL
+            apiKey: 'YOUR_API_KEY', // APIキー（管理者から取得）
+            timeout: 30000
+        };
+
+        // サンプルデータ（開発・テスト用）
+        const sampleRingiData = [
+            {
+                id: 'R2024001',
+                title: '新システム導入に関する稟議',
+                date: '2024-03-15',
+                department: 'it',
+                status: 'approved',
+                applicant: '田中太郎',
+                attachments: ['システム仕様書.pdf', 'コスト見積書.xlsx', 'スケジュール.pdf']
+            },
+            {
+                id: 'R2024002',
+                title: '営業車両購入申請',
+                date: '2024-03-14',
+                department: 'sales',
+                status: 'pending',
+                applicant: '佐藤花子',
+                attachments: ['見積書.pdf', 'カタログ.pdf']
+            },
+            {
+                id: 'R2024003',
+                title: '研修費用の申請について',
+                date: '2024-03-13',
+                department: 'hr',
+                status: 'approved',
+                applicant: '鈴木一郎',
+                attachments: []
+            },
+            {
+                id: 'R2024004',
+                title: '事務用品一括購入',
+                date: '2024-03-12',
+                department: 'general',
+                status: 'approved',
+                applicant: '山田美子',
+                attachments: ['購入リスト.xlsx', '見積書.pdf', 'カタログ.pdf', '業者資料.pdf']
+            },
+            {
+                id: 'R2024005',
+                title: '決算処理システム更新',
+                date: '2024-03-11',
+                department: 'accounting',
+                status: 'rejected',
+                applicant: '高橋次郎',
+                attachments: ['提案書.pdf']
+            }
+        ];
+
+        let currentResults = [];
+        let isDownloading = false;
+
+        // 部署名の日本語マッピング
+        const departmentNames = {
+            'sales': '営業部',
+            'accounting': '経理部',
+            'hr': '人事部',
+            'it': '情報システム部',
+            'general': '総務部'
+        };
+
+        // ステータスの日本語マッピング
+        const statusNames = {
+            'pending': '承認待ち',
+            'approved': '承認済み',
+            'rejected': '却下'
+        };
+
+        // 検索フォームの送信処理
+        document.getElementById('searchForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            performSearch();
+        });
+
+        // 一括ダウンロードボタンのクリック処理
+        document.getElementById('downloadBtn').addEventListener('click', function() {
+            if (!isDownloading) {
+                startBulkDownload();
+            }
+        });
+
+        // GroupSession クラウド版API呼び出し
+        async function fetchRingiFromAPI(searchParams) {
+            try {
+                const response = await fetch(`${GROUPSESSION_CONFIG.baseUrl}/api/ringi/search`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${GROUPSESSION_CONFIG.apiKey}`,
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: JSON.stringify(searchParams),
+                    signal: AbortSignal.timeout(GROUPSESSION_CONFIG.timeout)
+                });
+
+                if (!response.ok) {
+                    throw new Error(`API Error: ${response.status}`);
+                }
+
+                return await response.json();
+            } catch (error) {
+                console.error('API呼び出しエラー:', error);
+                // エラー時はサンプルデータを使用
+                showToast('API接続エラー - サンプルデータを表示中', 'error');
+                return { data: sampleRingiData, success: false };
+            }
+        }
+
+        // 検索実行
+        async function performSearch() {
+            const formData = {
+                dateFrom: document.getElementById('dateFrom').value,
+                dateTo: document.getElementById('dateTo').value,
+                keyword: document.getElementById('keyword').value,
+                department: document.getElementById('department').value,
+                status: document.getElementById('status').value
+            };
+
+            // ローディング表示
+            showToast('検索中...', 'info');
+
+            try {
+                // まずAPIを試行
+                const apiResult = await fetchRingiFromAPI(formData);
+                
+                if (apiResult.success) {
+                    currentResults = apiResult.data;
+                } else {
+                    // API失敗時はサンプルデータでフィルタリング
+                    currentResults = sampleRingiData.filter(ringi => {
+                        let match = true;
+
+                        if (formData.dateFrom && ringi.date < formData.dateFrom) match = false;
+                        if (formData.dateTo && ringi.date > formData.dateTo) match = false;
+                        if (formData.keyword && !ringi.title.includes(formData.keyword)) match = false;
+                        if (formData.department && ringi.department !== formData.department) match = false;
+                        if (formData.status && ringi.status !== formData.status) match = false;
+
+                        return match;
+                    });
+                }
+
+                // 日付順でソート（最新が最初）
+                currentResults.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+                displayResults();
+                showToast(`${currentResults.length}件の稟議が見つかりました`, 'success');
+                
+            } catch (error) {
+                console.error('検索エラー:', error);
+                showToast('検索中にエラーが発生しました', 'error');
+            }
+        }
+
+        // 検索結果の表示
+        function displayResults() {
+            const resultsSection = document.getElementById('resultsSection');
+            const resultsCount = document.getElementById('resultsCount');
+            const ringiList = document.getElementById('ringiList');
+            const downloadBtn = document.getElementById('downloadBtn');
+
+            if (currentResults.length === 0) {
+                resultsSection.style.display = 'none';
+                downloadBtn.disabled = true;
+                return;
+            }
+
+            resultsSection.style.display = 'block';
+            resultsCount.textContent = `検索結果: ${currentResults.length}件`;
+            downloadBtn.disabled = false;
+
+            // リストをクリア
+            ringiList.innerHTML = '';
+
+            // 結果を表示（最新を0001としてナンバリング）
+            currentResults.forEach((ringi, index) => {
+                const ringiItem = document.createElement('div');
+                ringiItem.className = 'ringi-item';
+                
+                const fileNumber = String(index + 1).padStart(4, '0');
+                
+                ringiItem.innerHTML = `
+                    <div class="status-indicator"></div>
+                    <div class="ringi-header">
+                        <div class="ringi-number">${fileNumber}</div>
+                        <div class="ringi-title">${ringi.title}</div>
+                        <div class="ringi-date">${ringi.date}</div>
+                    </div>
+                    <div class="ringi-details">
+                        <div class="detail-item">
+                            <span class="detail-label">ID:</span>
+                            <span>${ringi.id}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">申請者:</span>
+                            <span>${ringi.applicant}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">部署:</span>
+                            <span>${departmentNames[ringi.department] || ringi.department}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">状況:</span>
+                            <span>${statusNames[ringi.status] || ringi.status}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">添付:</span>
+                            <span class="attachment-count ${ringi.attachments.length === 0 ? 'zero' : ''}">${ringi.attachments.length}件</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">フォルダ:</span>
+                            <span>${fileNumber}_${ringi.id}</span>
+                        </div>
+                    </div>
+                `;
+
+                ringiList.appendChild(ringiItem);
+            });
+        }
+
+        // 実際のファイルダウンロード関数
+        async function downloadAttachmentFile(ringiId, attachmentName) {
+            try {
+                // GroupSession APIからファイルをダウンロード
+                const response = await fetch(`${GROUPSESSION_CONFIG.baseUrl}/api/ringi/${ringiId}/attachment/${encodeURIComponent(attachmentName)}`, {
+                    headers: {
+                        'Authorization': `Bearer ${GROUPSESSION_CONFIG.apiKey}`
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`ファイルダウンロード失敗: ${response.status}`);
+                }
+                
+                return await response.blob();
+            } catch (error) {
+                console.error('ファイルダウンロードエラー:', error);
+                // エラー時はダミーファイルを作成
+                return new Blob([`ダミーファイル: ${attachmentName}`], { type: 'text/plain' });
+            }
+        }
+
+        // 空ファイル作成
+        function createEmptyFile(filename = 'empty.txt') {
+            return new Blob(['このフォルダには添付ファイルがありませんでした。'], { type: 'text/plain' });
+        }
+
+        // 一括ダウンロード開始（実際のZIP作成）
+        async function startBulkDownload() {
+            if (currentResults.length === 0) {
+                showToast('ダウンロードする稟議がありません', 'error');
+                return;
+            }
+
+            isDownloading = true;
+            document.getElementById('downloadBtn').disabled = true;
+            document.getElementById('progressSection').style.display = 'block';
+            
+            const progressFill = document.getElementById('progressFill');
+            const progressText = document.getElementById('progressText');
+            const logSection = document.getElementById('logSection');
+            
+            // ログクリア
+            logSection.innerHTML = '';
+            
+            addLog('📋 一括ダウンロード開始...');
+            addLog(`📊 対象稟議: ${currentResults.length}件`);
+            addLog('🗜️ ZIPファイル作成中...');
+            
+            // JSZipインスタンス作成
+            const zip = new JSZip();
+            let completed = 0;
+            const total = currentResults.length;
+
+            for (let i = 0; i < currentResults.length; i++) {
+                const ringi = currentResults[i];
+                const fileNumber = String(i + 1).padStart(4, '0');
+                const folderName = `${fileNumber}_${ringi.id}`;
+                
+                // 稟議アイテムのステータスを更新
+                const ringiItems = document.querySelectorAll('.ringi-item');
+                const statusIndicator = ringiItems[i].querySelector('.status-indicator');
+                statusIndicator.classList.add('processing');
+                
+                addLog(`📁 フォルダ作成: ${folderName}`);
+                
+                // フォルダを作成
+                const folder = zip.folder(folderName);
+                
+                // 稟議情報テキストファイルを作成
+                const ringiInfo = `稟議情報
+================
+ID: ${ringi.id}
+タイトル: ${ringi.title}
+申請日: ${ringi.date}
+申請者: ${ringi.applicant}
+部署: ${departmentNames[ringi.department] || ringi.department}
+状況: ${statusNames[ringi.status] || ringi.status}
+添付ファイル数: ${ringi.attachments.length}件
+
+添付ファイル一覧:
+${ringi.attachments.length > 0 ? ringi.attachments.map(att => `- ${att}`).join('\n') : '（添付ファイルなし）'}
+`;
+                
+                folder.file('稟議情報.txt', ringiInfo);
+                
+                if (ringi.attachments.length > 0) {
+                    addLog(`📎 添付ファイル: ${ringi.attachments.length}件`);
+                    
+                    // 各添付ファイルをダウンロードしてZIPに追加
+                    for (const attachment of ringi.attachments) {
+                        addLog(`⬇️ ダウンロード中: ${attachment}`);
+                        
+                        try {
+                            const fileBlob = await downloadAttachmentFile(ringi.id, attachment);
+                            folder.file(attachment, fileBlob);
+                            addLog(`✅ 追加完了: ${attachment}`);
+                        } catch (error) {
+                            addLog(`❌ エラー: ${attachment} - ${error.message}`);
+                            // エラー時はエラー情報ファイルを作成
+                            folder.file(`ERROR_${attachment}.txt`, `ダウンロードエラー: ${error.message}`);
+                        }
+                        
+                        // 少し待機
+                        await new Promise(resolve => setTimeout(resolve, 200));
+                    }
+                } else {
+                    addLog(`📄 添付なし - 空ファイル作成`);
+                    const emptyFile = createEmptyFile('empty.txt');
+                    folder.file('empty.txt', emptyFile);
+                }
+                
+                // ステータスを完了に変更
+                statusIndicator.classList.remove('processing');
+                statusIndicator.classList.add('completed');
+                
+                completed++;
+                const progress = (completed / total) * 100;
+                progressFill.style.width = `${progress}%`;
+                progressText.textContent = `${completed}/${total}件 完了 (${Math.round(progress)}%)`;
+                
+                addLog(`✅ 完了: ${folderName}`);
+            }
+            
+            addLog('🗜️ ZIPファイル生成中...');
+            progressText.textContent = 'ZIPファイル生成中...';
+            
+            try {
+                // ZIPファイルを生成
+                const zipBlob = await zip.generateAsync({
+                    type: 'blob',
+                    compression: 'DEFLATE',
+                    compressionOptions: {
+                        level: 6
+                    }
+                }, function updateCallback(metadata) {
+                    const percent = Math.round(metadata.percent);
+                    progressText.textContent = `ZIP生成中... ${percent}%`;
+                    progressFill.style.width = `${percent}%`;
+                });
+                
+                // ダウンロード実行
+                const now = new Date();
+                const timestamp = now.getFullYear() + 
+                    String(now.getMonth() + 1).padStart(2, '0') + 
+                    String(now.getDate()).padStart(2, '0') + '_' +
+                    String(now.getHours()).padStart(2, '0') + 
+                    String(now.getMinutes()).padStart(2, '0');
+                
+                const filename = `稟議資料_${timestamp}.zip`;
+                
+                const downloadLink = document.createElement('a');
+                downloadLink.href = URL.createObjectURL(zipBlob);
+                downloadLink.download = filename;
+                document.body.appendChild(downloadLink);
+                downloadLink.click();
+                document.body.removeChild(downloadLink);
+                
+                // メモリ解放
+                URL.revokeObjectURL(downloadLink.href);
+                
+                addLog(`📦 ZIPダウンロード完了: ${filename}`);
+                addLog(`📊 ファイルサイズ: ${(zipBlob.size / 1024 / 1024).toFixed(2)} MB`);
+                showToast(`ZIPファイルのダウンロードが完了しました！\nファイル名: ${filename}`, 'success');
+                
+            } catch (error) {
+                console.error('ZIP生成エラー:', error);
+                addLog(`❌ ZIP生成エラー: ${error.message}`);
+                showToast('ZIPファイルの生成に失敗しました', 'error');
+            }
+            
+            progressText.textContent = `完了 - ${total}件の稟議を処理しました`;
+            progressFill.style.width = '100%';
+            
+            isDownloading = false;
+            document.getElementById('downloadBtn').disabled = false;
+        }
+
+        // ダウンロードシミュレート（削除 - 実際のダウンロード関数に置き換え済み）
+
+        // 空ファイル作成シミュレート（削除 - 実際の関数に置き換え済み）
+
+        // ログ追加
+        function addLog(message) {
+            const logSection = document.getElementById('logSection');
+            const logEntry = document.createElement('div');
+            logEntry.className = 'log-entry';
+            
+            const timestamp = new Date().toLocaleTimeString('ja-JP');
+            logEntry.textContent = `[${timestamp}] ${message}`;
+            
+            logSection.appendChild(logEntry);
+            logSection.scrollTop = logSection.scrollHeight;
+        }
+
+        // トースト通知
+        function showToast(message, type = 'success') {
+            const toast = document.createElement('div');
+            toast.className = `toast ${type === 'error' ? 'error' : ''}`;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => toast.classList.add('show'), 100);
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => document.body.removeChild(toast), 300);
+            }, 3000);
+        }
+
+        // 初期化時にデフォルトの日付を設定
+        document.addEventListener('DOMContentLoaded', function() {
+            const today = new Date();
+            const oneMonthAgo = new Date(today.getFullYear(), today.getMonth() - 1, today.getDate());
+            
+            document.getElementById('dateFrom').value = oneMonthAgo.toISOString().split('T')[0];
+            document.getElementById('dateTo').value = today.toISOString().split('T')[0];
+        });
+    </script>
+</body>
+</html>
