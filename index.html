@@ -402,7 +402,10 @@
             <div class="search-section">
                 <h2 style="margin-bottom: 20px; color: #2c3e50;">🔍 検索条件</h2>
                 <form id="searchForm">
-                    <div class="form-row">
+                    <div class="form-group">
+                        <label for="keyword">キーワード</label>
+                        <input type="text" id="keyword" class="form-control" placeholder="稟議タイトルや内容を検索...">
+                    </div>
                         <div class="form-group">
                             <label for="dateFrom">開始日</label>
                             <input type="date" id="dateFrom" class="form-control">
@@ -413,9 +416,21 @@
                         </div>
                     </div>
                     
-                    <div class="form-group">
-                        <label for="keyword">キーワード</label>
-                        <input type="text" id="keyword" class="form-control" placeholder="稟議タイトルや内容を検索...">
+                    <div class="form-group" style="margin-bottom: 30px; padding: 20px; background: #e8f4fd; border-radius: 10px;">
+                        <h3 style="margin-bottom: 15px; color: #2c3e50;">🔐 認証設定</h3>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="apiUsername">GroupSessionユーザー名</label>
+                                <input type="text" id="apiUsername" class="form-control" placeholder="ユーザー名を入力">
+                            </div>
+                            <div class="form-group">
+                                <label for="apiPassword">GroupSessionパスワード</label>
+                                <input type="password" id="apiPassword" class="form-control" placeholder="パスワードを入力">
+                            </div>
+                        </div>
+                        <div style="text-align: center; margin-top: 15px;">
+                            <button type="button" id="saveCredentialsBtn" class="btn btn-primary">認証情報を保存</button>
+                        </div>
                     </div>
                     
                     <div class="form-row">
@@ -473,9 +488,14 @@
     <script>
         // GroupSession クラウド版 API設定
         const GROUPSESSION_CONFIG = {
-            baseUrl: 'https://st04.bycloud.jp/gsession/quantums/common/cmn001.do', // あなたの会社のGroupSession URL
-            apiKey: 'l0a+fWHxhLSuwhkESWuTtGjyoyQo0OzZQBhxVCJvwwQ=', // APIキー（管理者から取得）
+            baseUrl: 'https://st04.bycloud.jp/gsession/quantums',
             timeout: 30000
+        };
+
+        // ユーザー認証情報（初期化時に入力）
+        let userCredentials = {
+            username: '',
+            password: ''
         };
 
         // サンプルデータ（開発・テスト用）
@@ -546,6 +566,28 @@
             'rejected': '却下'
         };
 
+        // 認証情報保存ボタンのクリック処理
+        document.getElementById('saveCredentialsBtn').addEventListener('click', function() {
+            const username = document.getElementById('apiUsername').value.trim();
+            const password = document.getElementById('apiPassword').value.trim();
+            
+            if (!username || !password) {
+                showToast('ユーザー名とパスワードを入力してください', 'error');
+                return;
+            }
+            
+            userCredentials.username = username;
+            userCredentials.password = password;
+            
+            showToast('認証情報を保存しました', 'success');
+            
+            // 認証フィールドを無効化
+            document.getElementById('apiUsername').disabled = true;
+            document.getElementById('apiPassword').disabled = true;
+            document.getElementById('saveCredentialsBtn').textContent = '認証設定完了';
+            document.getElementById('saveCredentialsBtn').disabled = true;
+        });
+
         // 検索フォームの送信処理
         document.getElementById('searchForm').addEventListener('submit', function(e) {
             e.preventDefault();
@@ -561,12 +603,20 @@
 
         // GroupSession クラウド版API呼び出し
         async function fetchRingiFromAPI(searchParams) {
+            if (!userCredentials.username || !userCredentials.password) {
+                showToast('認証情報が設定されていません', 'error');
+                return { data: sampleRingiData, success: false };
+            }
+            
             try {
+                // ベーシック認証のヘッダーを作成
+                const credentials = btoa(`${userCredentials.username}:${userCredentials.password}`);
+                
                 const response = await fetch(`${GROUPSESSION_CONFIG.baseUrl}/api/ringi/search`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${GROUPSESSION_CONFIG.apiKey}`,
+                        'Authorization': `Basic ${credentials}`,
                         'X-Requested-With': 'XMLHttpRequest'
                     },
                     body: JSON.stringify(searchParams),
